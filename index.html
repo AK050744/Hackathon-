@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Language AI Code Editor</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; padding: 20px; 
+            background: linear-gradient(-45deg, #c13a3e, #fad0c4, #fad0c4, #fbc2eb);
+            background-size: 400% 400%; animation: gradientBG 10s ease infinite;
+            height: 100vh; margin: 0; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #fff;
+        }
+        textarea { width: 80%; height: 200px; font-family: monospace; padding: 10px; }
+        .output { background: #e7e2e2; padding: 10px; border: 1px solid #ddd; margin-top: 10px; width: 80%; color: black; }
+        select { margin-bottom: 10px; padding: 5px; }
+        button { padding: 8px 16px; margin-top: 10px; cursor: pointer; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .loading { color: #fff; background: #f39c12; padding: 5px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>AI Code Editor (Multi-Language)</h1>
+
+    <label for="language">Choose Language:</label>
+    <select id="language">
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="cpp">C++</option>
+        <option value="java">Java</option>
+    </select>
+
+    <textarea id="codeEditor" placeholder="Write your code here..."></textarea>
+    <div class="output" id="autocompleteOutput">Suggestions will appear here...</div>
+    <div class="output" id="bugOutput" style="white-space: pre-wrap; color: red;">Bugs will appear here...</div>
+
+    <script>
+        let ws;
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://127.0.0.1:8000/ws");
+
+            const editor = document.getElementById("codeEditor");
+            const languageSelector = document.getElementById("language");
+            const autocompleteOutput = document.getElementById("autocompleteOutput");
+            const bugOutput = document.getElementById("bugOutput");
+
+            let timeout;
+
+            function debounceSendCode() {
+                clearTimeout(timeout);
+                timeout = setTimeout(sendCode, 500);
+            }
+
+            function sendCode() {
+                if (ws.readyState === WebSocket.OPEN) {
+                    if (!editor.value.trim()) {
+                        autocompleteOutput.innerText = "Suggestions will appear here...";
+                        bugOutput.innerText = "Bugs will appear here...";
+                        return;
+                    }
+
+                    // Show loading indicator while waiting for response
+                    autocompleteOutput.innerHTML = "<span class='loading'>Loading suggestions...</span>";
+                    bugOutput.innerHTML = "<span class='loading'>Checking for bugs...</span>";
+
+                    ws.send(JSON.stringify({
+                        code: editor.value,
+                        language: languageSelector.value
+                    }));
+                }
+            }
+
+            editor.addEventListener("input", debounceSendCode);
+            languageSelector.addEventListener("change", sendCode);
+
+            ws.onopen = () => {
+                console.log("WebSocket connection established!");
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket disconnected. Reconnecting...");
+                setTimeout(connectWebSocket, 1000);  // Reconnect logic
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    autocompleteOutput.innerHTML = "<b>Suggestion:</b><br>" + data.suggestion;
+                    bugOutput.innerHTML = "<b>Bugs:</b><br>" + (data.bugs || "No bugs detected!");
+                } catch (e) {
+                    console.error("Error parsing message:", e);
+                    autocompleteOutput.innerText = "Error in response format!";
+                    bugOutput.innerText = "Error in response format!";
+                }
+            };
+        }
+
+        // Initial WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>
