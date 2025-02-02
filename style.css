@@ -1,0 +1,30 @@
+body{
+    background-image : url('image.jpeg');
+    background-size: cover;
+}
+
+h1{
+    font-family: arial;
+    text-decoration: solid;
+
+    
+    
+}
+
+label{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+#language{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.codeEditor{
+    font-family: 'Lucida Sans';
+}
+
+.output{
+  font-family: arial ;
+  font-style: italic;
+}
+
